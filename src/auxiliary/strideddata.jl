@@ -33,9 +33,9 @@ Base.setindex!(a::ConjugatedStridedData,v,i) = (@inbounds a.data[i] = conj(v))
 end
 
 # initial scaling of a block specified by dims
-_scale!{N}(C::StridedData{N}, β::One, dims::NTuple{N,Int}, offset::Int=0) = C
+_scale!{N}(C::StridedData{N}, β::Type{Val{1}}, dims::NTuple{N,Int}, offset::Int=0) = C
 
-@generated function _scale!{N}(C::StridedData{N}, β::Zero, dims::NTuple{N,Int}, offset::Int=0)
+@generated function _scale!{N}(C::StridedData{N}, β::Type{Val{0}}, dims::NTuple{N,Int}, offset::Int=0)
     meta = Expr(:meta,:inline)
     quote
         $meta

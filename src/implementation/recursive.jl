@@ -33,7 +33,7 @@ end
                 trace_rec!(α, A, β, C, dims, offsetA, offsetC, minstrides)
             end begin
                 if C.strides[dmax] == 0
-                    trace_rec!(α, A, _one, C, dims, offsetA, offsetC, minstrides)
+                    trace_rec!(α, A, Val{1}, C, dims, offsetA, offsetC, minstrides)
                 else
                     trace_rec!(α, A, β, C, dims, offsetA, offsetC, minstrides)
                 end
@@ -68,7 +68,7 @@ end
                     contract_rec!(α, A, B, β, C, dims, offsetA, offsetB, offsetC, minstrides)
                 end begin
                 if C.strides[dmax] == 0 # dmax is contraction dimension: β -> 1
-                    contract_rec!(α, A, B, _one, C, dims, offsetA, offsetB, offsetC, minstrides)
+                    contract_rec!(α, A, B, Val{1}, C, dims, offsetA, offsetB, offsetC, minstrides)
                 else
                     contract_rec!(α, A, B, β, C, dims, offsetA, offsetB, offsetC, minstrides)
                 end

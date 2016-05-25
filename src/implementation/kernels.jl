@@ -20,7 +20,7 @@ end
         stridesA = A.strides
         startC = C.start+offsetC
         stridesC = C.strides
-        @stridedloops($N, dims, indA, startA, stridesA, indC, startC, stridesC, @inbounds C[indC]=axpby(α,A[indA],_one,C[indC]))
+        @stridedloops($N, dims, indA, startA, stridesA, indC, startC, stridesC, @inbounds C[indC]=axpby(α,A[indA],Val{1},C[indC]))
         return C
     end
 end
@@ -35,7 +35,7 @@ end
         startC = C.start+offsetC
         stridesC = C.strides
 
-        @stridedloops($N, dims, indA, startA, stridesA, indB, startB, stridesB, indC, startC, stridesC, @inbounds C[indC] = axpby(α, A[indA]*B[indB], _one, C[indC]))
+        @stridedloops($N, dims, indA, startA, stridesA, indB, startB, stridesB, indC, startC, stridesC, @inbounds C[indC] = axpby(α, A[indA]*B[indB], Val{1}, C[indC]))
         return C
     end
 end

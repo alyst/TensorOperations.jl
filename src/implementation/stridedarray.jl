@@ -22,13 +22,13 @@ function add!{CA}(α, A::StridedArray, ::Type{Val{CA}}, β, C::StridedArray, ind
     if α == 0
         β == 1 || _scale!(dataC,β,dims)
     elseif α == 1 && β == 0
-        add_rec!(_one, dataA, _zero, dataC, dims, offsetA, offsetC, minstrides)
+        add_rec!(Val{1}, dataA, Val{0}, dataC, dims, offsetA, offsetC, minstrides)
     elseif α == 1 && β == 1
-        add_rec!(_one, dataA, _one, dataC, dims, offsetA, offsetC, minstrides)
+        add_rec!(Val{1}, dataA, Val{1}, dataC, dims, offsetA, offsetC, minstrides)
     elseif β == 0
-        add_rec!(α, dataA, _zero, dataC, dims, offsetA, offsetC, minstrides)
+        add_rec!(α, dataA, Val{0}, dataC, dims, offsetA, offsetC, minstrides)
     elseif β == 1
-        add_rec!(α, dataA, _one, dataC, dims, offsetA, offsetC, minstrides)
+        add_rec!(α, dataA, Val{1}, dataC, dims, offsetA, offsetC, minstrides)
     else
         add_rec!(α, dataA, β, dataC, dims, offsetA, offsetC, minstrides)
     end
@@ -60,13 +60,13 @@ function trace!{CA}(α, A::StridedArray, ::Type{Val{CA}}, β, C::StridedArray, i
     if α == 0
         β == 1 || _scale!(dataC, β, dims)
     elseif α == 1 && β == 0
-        trace_rec!(_one, dataA, _zero, dataC, dims, offsetA, offsetC, minstrides)
+        trace_rec!(Val{1}, dataA, Val{0}, dataC, dims, offsetA, offsetC, minstrides)
     elseif α == 1 && β == 1
-        trace_rec!(_one, dataA, _one, dataC, dims, offsetA, offsetC, minstrides)
+        trace_rec!(Val{1}, dataA, Val{1}, dataC, dims, offsetA, offsetC, minstrides)
     elseif β == 0
-        trace_rec!(α, dataA, _zero, dataC, dims, offsetA, offsetC, minstrides)
+        trace_rec!(α, dataA, Val{0}, dataC, dims, offsetA, offsetC, minstrides)
     elseif β == 1
-        trace_rec!(α, dataA, _one, dataC, dims, offsetA, offsetC, minstrides)
+        trace_rec!(α, dataA, Val{1}, dataC, dims, offsetA, offsetC, minstrides)
     else
         trace_rec!(α, dataA, β, dataC, dims, offsetA, offsetC, minstrides)
     end
@@ -215,13 +215,13 @@ function contract!{CA,CB}(α, A::StridedArray, ::Type{Val{CA}}, B::StridedArray,
     if α == 0
         β == 1 || _scale!(dataC, β, dims)
     elseif α == 1 && β == 0
-        contract_rec!(_one, dataA, dataB, _zero, dataC, dims, offsetA, offsetB, offsetC, minstrides)
+        contract_rec!(Val{1}, dataA, dataB, Val{0}, dataC, dims, offsetA, offsetB, offsetC, minstrides)
     elseif α == 1 && β == 1
-        contract_rec!(_one, dataA, dataB, _one, dataC, dims, offsetA, offsetB, offsetC, minstrides)
+        contract_rec!(Val{1}, dataA, dataB, Val{1}, dataC, dims, offsetA, offsetB, offsetC, minstrides)
     elseif β == 0
-        contract_rec!(α, dataA, dataB, _zero, dataC, dims, offsetA, offsetB, offsetC, minstrides)
+        contract_rec!(α, dataA, dataB, Val{0}, dataC, dims, offsetA, offsetB, offsetC, minstrides)
     elseif β == 1
-        contract_rec!(α, dataA, dataB, _one, dataC, dims, offsetA, offsetB, offsetC, minstrides)
+        contract_rec!(α, dataA, dataB, Val{1}, dataC, dims, offsetA, offsetB, offsetC, minstrides)
     else
         contract_rec!(α, dataA, dataB, β, dataC, dims, offsetA, offsetB, offsetC, minstrides)
     end
