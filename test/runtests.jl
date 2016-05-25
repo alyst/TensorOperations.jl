@@ -1,5 +1,5 @@
 using TensorOperations
-using Base.Test
+using FactCheck
 
 include("methods.jl")
 include("tensor.jl")
