@@ -70,9 +70,19 @@ end
 
 """`contract!(α, A, conjA, B, conjB, β, C, oindA, cindA, oindB, cindB, indCinoAB, [method])`
 
-Implements `C = β*C+α*contract(op(A),op(B))` where `A` and `B` are contracted according to `oindA`, `cindA`, `oindB`, `cindB` and `indCinoAB`. The operation `op` acts as `conj` if `conjA` or `conjB` equal `Val{:C}` or as the identity map if `conjA` (`conjB`) equal `Val{:N}`. The dimension `cindA[i]` of `A` is contracted with dimension `cindB[i]` of `B`. The `n`th dimension of C is associated with an uncontracted (open) dimension of `A` or `B` according to `indCinoAB[n] < NoA ? oindA[indCinoAB[n]] : oindB[indCinoAB[n]-NoA]` with `NoA=length(oindA)` the number of open dimensions of `A`.
+Implements `C = β*C+α*contract(op(A),op(B))` where `A` and `B` are contracted
+according to `oindA`, `cindA`, `oindB`, `cindB` and `indCinoAB`.
+The operation `op` acts as `conj` if `conjA` or `conjB` equal `Val{:C}` or
+as the identity map if `conjA` (`conjB`) equal `Val{:N}`.
+The dimension `cindA[i]` of `A` is contracted with dimension `cindB[i]` of `B`.
+The `n`th dimension of `C` is associated with an uncontracted (open) dimension of
+`A` or `B` according to `indCinoAB[n] ≦ NoA ? oindA[indCinoAB[n]] : oindB[indCinoAB[n]-NoA]`
+with `NoA=length(oindA)` the number of open dimensions of `A`.
 
-The optional argument `method` specifies whether the contraction is performed using BLAS matrix multiplication by specifying `Val{:BLAS}` (default), or using a native algorithm by specifying `Val{:native}`. The native algorithm does not copy the data but is typically slower.
+The optional argument `method` specifies whether the contraction is performed
+using BLAS matrix multiplication by specifying `Val{:BLAS}` (default),
+or using a native algorithm by specifying `Val{:native}`.
+The native algorithm does not copy the data but is typically slower.
 """
 function contract!{CA,CB,TC<:Base.LinAlg.BlasFloat}(α, A::StridedArray, ::Type{Val{CA}}, B::StridedArray, ::Type{Val{CB}}, β, C::StridedArray{TC},
                                                     oindA, cindA, oindB, cindB, indCinoAB, ::Type{Val{:BLAS}}=Val{:BLAS})
