@@ -9,9 +9,7 @@
 Implements `C = β*C+α*permute(op(A))` where `A` is permuted according to `indCinA` and `op` is `conj` if `conjA=Val{:C}` or the identity map if `conjA=Val{:N}`. The indexable collection `indCinA` contains as nth entry the dimension of `A` associated with the nth dimension of `C`.
 """
 function add!{CA}(α, A::StridedArray, ::Type{Val{CA}}, β, C::StridedArray, indCinA)
-    for i = 1:ndims(C)
-        size(A,indCinA[i]) == size(C,i) || throw(DimensionMismatch())
-    end
+    _size(A, indCinA) == _size(C) || throw(DimensionMismatch())
 
     dims, stridesA, stridesC, minstrides = add_strides(size(C), _permute(_strides(A),indCinA), _strides(C))
     dataA = StridedData(A, stridesA, Val{CA})
@@ -43,12 +41,9 @@ function trace!{CA}(α, A::StridedArray, ::Type{Val{CA}}, β, C::StridedArray, i
     NC = ndims(C)
     NA = ndims(A)
 
-    for i = 1:NC
-        size(A,indCinA[i]) == size(C,i) || throw(DimensionMismatch(""))
-    end
-    for i = 1:div(NA-NC,2)
-        size(A,cindA1[i]) == size(A,cindA2[i]) || throw(DimensionMismatch(""))
-    end
+    _size(A, indCinA) == _size(C) || throw(DimensionMismatch(""))
+    (NC + 2*length(cindA1) == NA &&
+     _size(A, cindA1) == _size(A, cindA2)) || throw(DimensionMismatch(""))
 
     pA = vcat(indCinA, cindA1, cindA2)
     dims, stridesA, stridesC, minstrides = trace_strides(_permute(size(A),pA), _permute(_strides(A),pA), _strides(C))
@@ -79,7 +74,8 @@ Implements `C = β*C+α*contract(op(A),op(B))` where `A` and `B` are contracted 
 
 The optional argument `method` specifies whether the contraction is performed using BLAS matrix multiplication by specifying `Val{:BLAS}` (default), or using a native algorithm by specifying `Val{:native}`. The native algorithm does not copy the data but is typically slower.
 """
-function contract!{CA,CB,TC<:Base.LinAlg.BlasFloat}(α, A::StridedArray, ::Type{Val{CA}}, B::StridedArray, ::Type{Val{CB}}, β, C::StridedArray{TC}, oindA, cindA, oindB, cindB, indCinoAB, ::Type{Val{:BLAS}}=Val{:BLAS})
+function contract!{CA,CB,TC<:Base.LinAlg.BlasFloat}(α, A::StridedArray, ::Type{Val{CA}}, B::StridedArray, ::Type{Val{CB}}, β, C::StridedArray{TC},
+                                                    oindA, cindA, oindB, cindB, indCinoAB, ::Type{Val{:BLAS}}=Val{:BLAS})
     NA = ndims(A)
     NB = ndims(B)
     NC = ndims(C)
@@ -87,22 +83,16 @@ function contract!{CA,CB,TC<:Base.LinAlg.BlasFloat}(α, A::StridedArray, ::Type{
     TB = eltype(B)
 
     # dimension checking
-    dimA = size(A)
-    dimB = size(B)
-    dimC = size(C)
-
-    cdimsA = dimA[cindA]
-    cdimsB = dimB[cindB]
-    odimsA = dimA[oindA]
-    odimsB = dimB[oindB]
+    cdims = _size(A, cindA)
+    cdimsB = _size(B, cindB)
+    odimsA = _size(A, oindA)
+    odimsB = _size(B, oindB)
     odimsAB = tuple(odimsA..., odimsB...)
 
-    for i = 1:length(cdimsA)
-        cdimsA[i] == cdimsB[i] || throw(DimensionMismatch())
-    end
-    cdims = cdimsA
+    _iselequal(cdims, cdimsB) || throw(DimensionMismatch())
 
-    for i = 1:length(indCinoAB)
+    dimC = size(C)
+    for i in 1:length(indCinoAB)
         dimC[i] == odimsAB[indCinoAB[i]] || throw(DimensionMismatch())
     end
 
@@ -113,27 +103,25 @@ function contract!{CA,CB,TC<:Base.LinAlg.BlasFloat}(α, A::StridedArray, ::Type{
     # permute A
     if CA == :C
         conjA = 'C'
-        pA = vcat(cindA, oindA)
-        if isa(A, Array{TC}) && pA == collect(1:NA)
+        if isa(A, Array{TC}) && _iselequal(cindA, oindA, 1:NA)
             Amat = reshape(A, (clength, olengthA))
         else
             Apermuted = Array{TC}(tuple(cdims..., odimsA...))
             # tensorcopy!(A, 1:NA, Apermuted, pA)
-            add!(1, A, Val{:N}, 0, Apermuted, pA)
+            add!(1, A, Val{:N}, 0, Apermuted, tuple(cindA..., oindA...))
             Amat = reshape(Apermuted, (clength, olengthA))
         end
     else
         conjA = 'N'
-        pA = vcat(oindA, cindA)
-        if isa(A, Array{TC}) && pA == collect(1:NA)
+        if isa(A, Array{TC}) && _iselequal(oindA, cindA, 1:NA)
             Amat = reshape(A, (olengthA, clength))
-        elseif isa(A, Array{TC}) && vcat(cindA, oindA) == collect(1:NA)
+        elseif isa(A, Array{TC}) && _iselequal(cindA, oindA, 1:NA)
             conjA = 'T'
             Amat = reshape(A, (clength, olengthA))
         else
             Apermuted = Array{TC}(tuple(odimsA..., cdims...))
             # tensorcopy!(A, 1:NA, Apermuted, pA)
-            add!(1, A, Val{:N}, 0, Apermuted, pA)
+            add!(1, A, Val{:N}, 0, Apermuted, tuple(oindA..., cindA...))
             Amat = reshape(Apermuted, (olengthA, clength))
         end
     end
@@ -141,33 +129,31 @@ function contract!{CA,CB,TC<:Base.LinAlg.BlasFloat}(α, A::StridedArray, ::Type{
     # permute B
     if CB == :C
         conjB = 'C'
-        pB = vcat(oindB, cindB)
-        if isa(B, Array{TC}) && pB == collect(1:NB)
+        if isa(B, Array{TC}) && _iselequal(oindB, cindB, 1:NB)
             Bmat = reshape(B, (olengthB, clength))
         else
             Bpermuted = Array{TC}(tuple(odimsB..., cdims...))
             # tensorcopy!(B, 1:NB, Bpermuted, pB)
-            add!(1, B, Val{:N}, 0, Bpermuted, pB)
+            add!(1, B, Val{:N}, 0, Bpermuted, tuple(oindB..., cindB...))
             Bmat = reshape(Bpermuted, (olengthB, clength))
         end
     else
         conjB = 'N'
-        pB = vcat(cindB, oindB)
-        if  isa(B, Array{TC}) && pB == collect(1:NB)
+        if  isa(B, Array{TC}) && _iselequal(cindB, oindB, 1:NB)
             Bmat = reshape(B, (clength, olengthB))
-        elseif isa(B, Array{TC}) && vcat(oindB, cindB) == collect(1:NB)
+        elseif isa(B, Array{TC}) && _iselequal(oindB, cindB, 1:NB)
             conjB = 'T'
             Bmat = reshape(B, (olengthB, clength))
         else
             Bpermuted = Array{TC}(tuple(cdims..., odimsB...))
             # tensorcopy!(B, 1:NB, Bpermuted, pB)
-            add!(1, B, Val{:N}, 0, Bpermuted, pB)
+            add!(1, B, Val{:N}, 0, Bpermuted, tuple(cindB..., oindB...))
             Bmat = reshape(Bpermuted, (clength, olengthB))
         end
     end
 
     # calculate C
-    if isa(C, Array) && indCinoAB == collect(1:NC)
+    if isa(C, Array) && _iselequal(indCinoAB, 1:NC)
         Cmat = reshape(C, (olengthA, olengthB))
         BLAS.gemm!(conjA, conjB, TC(α), Amat, Bmat, TC(β), Cmat)
     else
@@ -179,20 +165,17 @@ function contract!{CA,CB,TC<:Base.LinAlg.BlasFloat}(α, A::StridedArray, ::Type{
     return C
 end
 
-function contract!{CA,CB}(α, A::StridedArray, ::Type{Val{CA}}, B::StridedArray, ::Type{Val{CB}}, β, C::StridedArray, oindA, cindA, oindB, cindB, indCinoAB, ::Type{Val{:native}}=Val{:native}())
+function contract!{CA,CB}(α, A::StridedArray, ::Type{Val{CA}}, B::StridedArray, ::Type{Val{CB}}, β, C::StridedArray,
+                          oindA, cindA, oindB, cindB, indCinoAB, ::Type{Val{:native}}=Val{:native}())
     NA = ndims(A)
     NB = ndims(B)
     NC = ndims(C)
 
     # dimension checking
-    dimA = size(A)
-    dimB = size(B)
-    dimC = size(C)
-
-    cdimsA = dimA[cindA]
-    cdimsB = dimB[cindB]
-    odimsA = dimA[oindA]
-    odimsB = dimB[oindB]
+    cdimsA = _size(A, cindA)
+    cdimsB = _size(B, cindB)
+    odimsA = _size(A, oindA)
+    odimsB = _size(B, oindB)
     odimsAB = tuple(odimsA..., odimsB...)
 
     # Perform contraction
