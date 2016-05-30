@@ -7,6 +7,8 @@ export tensorcopy!, tensoradd!, tensortrace!, tensorcontract!, tensorproduct!
 
 export @tensor
 
+using Iterators
+
 # Auxiliary functions
 #---------------------
 include("auxiliary/axpby.jl")

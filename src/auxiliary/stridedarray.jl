@@ -33,3 +33,43 @@ end
 Returns the single element of a tensor-like object with zero dimensions, i.e. if `numind(C)==0`.
 """
 scalar(C::StridedArray) = numind(C)==0 ? C[1] : throw(DimensionMismatch())
+
+"""`_iselequal(A, B)`
+
+Checks if the collection `A` contains the same elements and in the same order as `B`.
+"""
+function _iselequal(A, B)
+    eltype(A) == eltype(B) || return false
+    length(A) == length(B) || return false
+    for (a, b) in zip(A, B)
+        a == b || return false
+    end
+    return true
+end
+
+"""`_iselequal(A1, A2, B)`
+
+Checks if the combined collection of `A1` and `A2` contains the same elements and in the same order as `B`.
+"""
+function _iselequal(A1, A2, B)
+    eltype(A1) == eltype(A2) == eltype(B) || return false
+    (length(A1) + length(A2) == length(B)) || return false
+    for (a, b) in zip(chain(A1, A2), B)
+        a == b || return false
+    end
+    return true
+end
+
+"""`_size(A, [dims])`
+
+`size()` wrapper that always returns tuple.
+
+Returns empty tuple if `dims` is specified and empty.
+"""
+_size(A) = size(A)
+_size(A, dim::Number) = (size(A, dim), )
+_size(A, dims::Tuple{}) = tuple()
+_size(A, dims::Tuple{Int}) = (size(A, dims[1]), )
+_size{N}(A, dims::NTuple{N,Int}) = size(A, dims...)::NTuple{N,Int}
+_size(A, dims) = isempty(dims) ? tuple() :
+                 (length(dims) == 1 ? (size(A, dims[1]), ) : size(A, dims[1], dims[2], dims[3:end]...))
